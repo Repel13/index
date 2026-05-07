@@ -3,36 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="keywords" content="pinjam, peminjaman, inventaris">
 <title>PinjamIn</title>
 
 <style>
 * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
 body { margin: 0; background: #f5f7fb; }
 
-/* DARK MODE */
 .dark { background: #1e293b; color: white; }
 .dark .card,.dark table,.dark .modal-content { background: #334155; color: white; }
-.dark th { background: #475569; }
-.dark input,.dark select { background: #475569; color: white; border: none; }
 
-/* LOGIN */
 .login-wrapper { height:100vh; display:flex; justify-content:center; align-items:center; background:linear-gradient(135deg,#2563eb,#1e40af); }
-.login-card { background:white; padding:40px 30px; border-radius:16px; width:320px; text-align:center; }
+.login-card { background:white; padding:40px; border-radius:16px; width:320px; text-align:center; }
 
-/* NAVBAR */
-.navbar { background:#2563eb; color:white; padding:15px; display:flex; justify-content:space-between; }
+.navbar { background:#2563eb; color:white; padding:15px; display:flex; justify-content:space-between; flex-wrap:wrap; }
 
-/* BUTTON */
-.btn { padding:10px; border:none; cursor:pointer; border-radius:10px; }
+.container { padding:20px; }
+
+.card { background:white; padding:20px; border-radius:12px; margin:10px; display:inline-block; min-width:150px; }
+
+table { width:100%; background:white; border-collapse:collapse; }
+th,td { padding:10px; border-bottom:1px solid #ddd; }
+
+.btn { padding:8px 12px; border:none; cursor:pointer; border-radius:8px; }
 .btn-primary { background:#2563eb; color:white; }
-.btn-secondary { background:white; color:#2563eb; }
-
-/* CHAT */
-#chatbot { position:fixed; bottom:20px; right:20px; width:300px; background:white; border-radius:10px; overflow:hidden; }
-#chatBox { height:200px; overflow:auto; padding:10px; }
+.btn-secondary { background:#fff; color:#2563eb; }
 
 .page { display:none; }
 .page.active { display:block; }
+
+/* CHAT */
+#chatbot {
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    width:300px;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 10px 20px rgba(0,0,0,0.2);
+}
+#chatBox { height:200px; overflow:auto; padding:10px; }
 </style>
 </head>
 
@@ -54,7 +65,8 @@ body { margin: 0; background: #f5f7fb; }
 <div class="navbar">
     <div>PinjamIn</div>
     <div>
-        <button class="btn btn-primary" onclick="showChat()">Chat AI</button>
+        <button class="btn btn-primary" onclick="toggleChat()">Chat AI</button>
+        <button class="btn btn-secondary" onclick="toggleDark()">Dark</button>
     </div>
 </div>
 
@@ -62,7 +74,7 @@ body { margin: 0; background: #f5f7fb; }
 
     <h2>Dashboard</h2>
 
-    <table border="1" width="100%">
+    <table>
         <thead>
             <tr>
                 <th>Barang</th>
@@ -76,11 +88,11 @@ body { margin: 0; background: #f5f7fb; }
 </div>
 </div>
 
-<!-- CHATBOT -->
+<!-- CHAT -->
 <div id="chatbot" style="display:none;">
     <div style="background:#2563eb;color:white;padding:10px;display:flex;justify-content:space-between;">
         <span>AI Chat</span>
-        <button onclick="showChat()">X</button>
+        <button onclick="toggleChat()" class="btn btn-secondary">X</button>
     </div>
 
     <div id="chatBox"></div>
@@ -92,29 +104,50 @@ body { margin: 0; background: #f5f7fb; }
 </div>
 
 <script>
-let data = [];
 
+/* ================= DATA ================= */
+let data = JSON.parse(localStorage.getItem("data")) || [];
+
+/* ================= LOGIN ================= */
 function login(){
     if(username.value=="revel" && password.value=="liam9904"){
         loginPage.style.display="none";
         app.style.display="block";
-    } else {
-        alert("Login salah");
-    }
+        render();
+    } else alert("Login salah");
 }
 
-function showChat(){
+/* ================= DARK MODE ================= */
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+/* ================= CHAT TOGGLE ================= */
+function toggleChat(){
     let c = document.getElementById("chatbot");
     c.style.display = c.style.display==="none"?"block":"none";
 }
 
-/* ================= CHAT AI GEMINI ================= */
+/* ================= RENDER ================= */
+function render(){
+    let html="";
+    data.forEach(x=>{
+        html += `
+        <tr>
+            <td>${x.barang || "-"}</td>
+            <td>${x.peminjam || "-"}</td>
+            <td>${x.status || "-"}</td>
+        </tr>`;
+    });
+    document.getElementById("data").innerHTML = html;
+}
 
+/* ================= GEMINI AI ================= */
 const API_KEY = "AIzaSyCzG3fXh5TbDLBa8O7YOd9ZOHzrX1u-r6o";
 
 async function sendChatMessage(){
-    const input = document.getElementById("chatInput");
-    const chatBox = document.getElementById("chatBox");
+    let input = document.getElementById("chatInput");
+    let chatBox = document.getElementById("chatBox");
 
     let text = input.value.trim();
     if(!text) return;
@@ -122,11 +155,10 @@ async function sendChatMessage(){
     chatBox.innerHTML += `<div><b>Kamu:</b><br>${text}</div>`;
     input.value = "";
 
-    const loadingId = "loading";
-    chatBox.innerHTML += `<div id="${loadingId}">AI: mengetik...</div>`;
+    chatBox.innerHTML += `<div id="loading-ai">AI: mengetik...</div>`;
 
-    try {
-        const res = await fetch(
+    try{
+        let res = await fetch(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY,
             {
                 method:"POST",
@@ -137,26 +169,28 @@ async function sendChatMessage(){
             }
         );
 
-        const result = await res.json();
-        document.getElementById(loadingId)?.remove();
+        let result = await res.json();
 
-        const reply = result?.candidates?.[0]?.content?.parts?.[0]?.text || "AI tidak merespon";
+        document.getElementById("loading-ai")?.remove();
+
+        let reply = result?.candidates?.[0]?.content?.parts?.[0]?.text || "AI tidak merespon";
 
         chatBox.innerHTML += `<div><b>AI:</b><br>${reply}</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
 
-    } catch(err){
-        document.getElementById(loadingId)?.remove();
+    } catch(e){
+        document.getElementById("loading-ai")?.remove();
         chatBox.innerHTML += `<div style="color:red;">Error koneksi</div>`;
     }
-
-    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+/* ================= EVENT ================= */
 document.getElementById("chatSendBtn").addEventListener("click", sendChatMessage);
 
-document.getElementById("chatInput").addEventListener("keypress", (e)=>{
+document.getElementById("chatInput").addEventListener("keypress", function(e){
     if(e.key==="Enter") sendChatMessage();
 });
+
 </script>
 
 </body>
