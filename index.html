@@ -310,7 +310,10 @@ td { padding:12px; border-bottom:1px solid #eee; }
         <button class="btn btn-secondary" style="font-weight:bold;min-width:32px;" onclick="toggleChat()">×</button>
     </div>
     <div id="chatBox" style="height:200px;overflow:auto;padding:10px;"></div>
-    <input id="chatInput" placeholder="Tanya..." style="width:100%;padding:10px;">
+    <div style="display:flex;gap:8px;padding:10px;">
+        <input id="chatInput" placeholder="Tanya..." style="flex:1;padding:10px;">
+        <button id="chatSendBtn" class="btn btn-primary" style="padding:10px 14px;min-width:80px;">Kirim</button>
+    </div>
 </div>
 
 <div id="reminderPopup" class="reminder-popup" style="display:none;">
